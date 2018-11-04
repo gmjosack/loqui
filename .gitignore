@@ -12,3 +12,7 @@ __pycache__
 erl_crash.dump
 *.ez
 doc/
+
+# rust
+target/
+Cargo.lock

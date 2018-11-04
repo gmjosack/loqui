@@ -1,0 +1,33 @@
+[package]
+name = "loqui"
+version = "0.1.0"
+authors = ["Gary Josack <gary@discordapp.com>"]
+repository = "https://github.com/discordapp/loqui"
+documentation = "https://docs.rs/loqui"
+license = "MIT"
+description = "Rust Client/Server Implementation of Loqui"
+
+[lib]
+name = "loqui"
+path = "rust/src/lib.rs"
+
+[dependencies]
+byteorder = "1.2.4"
+bytes = "0.4.9"
+failure = "0.1.2"
+failure_derive = "0.1.2"
+futures = "0.1"
+log = "0.4"
+tokio = "0.1"
+tokio-codec = "0.1"
+tokio-timer = "0.2"
+
+
+[dev-dependencies]
+criterion = "0.2"
+env_logger = "0.5"
+
+[[bench]]
+name = "codec"
+path = "rust/benches/codec.rs"
+harness = false
