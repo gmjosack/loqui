@@ -8,6 +8,7 @@ use tokio::prelude::*;
 use tokio::net::TcpStream;
 use tokio_codec::Framed;
 use tokio_timer::Interval;
+use log::{info, warn, debug};
 
 // Internal modules
 use crate::protocol::codec::{LoquiCodec, LoquiFrame};

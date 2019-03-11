@@ -1,8 +1,4 @@
 extern crate loqui;
-extern crate bytes;
-extern crate tokio_codec;
-
-#[macro_use] extern crate criterion;
 
 use criterion::Criterion;
 use bytes::BytesMut;

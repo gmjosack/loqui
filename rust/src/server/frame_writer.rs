@@ -1,14 +1,19 @@
 //! FrameWriter is a task that will continuously until it's stream has been exhausted.
 
+use std::fmt::Debug;
+
 use futures::stream::Fuse;
 use tokio::prelude::*;
+use log::{warn, debug};
 
 use crate::protocol::codec::LoquiFrame;
 
 
-pub struct FrameWriter<T, N>
-where T: Stream<Item=LoquiFrame>,
-      N: Sink<SinkItem=LoquiFrame>,
+pub struct FrameWriter<T, N, E, F>
+where T: Stream<Item=LoquiFrame, Error=E>,
+      N: Sink<SinkItem=LoquiFrame, SinkError=F>,
+      E: Debug,
+      F: Debug,
 {
     /// A Stream of LoquiFrame's that the FrameWriter will attempt to consume.
     stream: Fuse<T>,
@@ -22,9 +27,11 @@ where T: Stream<Item=LoquiFrame>,
 }
 
 
-impl<T, N> FrameWriter<T, N>
-where T: Stream<Item=LoquiFrame>,
-      N: Sink<SinkItem=LoquiFrame>,
+impl<T, N, E, F> FrameWriter<T, N, E, F>
+where T: Stream<Item=LoquiFrame, Error=E>,
+      N: Sink<SinkItem=LoquiFrame, SinkError=F>,
+      E: Debug,
+      F: Debug,
 {
     pub fn new(stream: T, sink: N) -> Self {
         Self {
@@ -47,9 +54,11 @@ where T: Stream<Item=LoquiFrame>,
     }
 }
 
-impl<T, N> Future for FrameWriter<T, N>
-where T: Stream<Item=LoquiFrame>,
-      N: Sink<SinkItem=LoquiFrame>,
+impl<T, N, E, F> Future for FrameWriter<T, N, E, F>
+where T: Stream<Item=LoquiFrame, Error=E>,
+      N: Sink<SinkItem=LoquiFrame, SinkError=F>,
+      E: Debug,
+      F: Debug,
 {
     // FrameWriter is meant to be run as a continuous task via tokio::spawn
     // so doesn't return anything.
@@ -61,8 +70,8 @@ where T: Stream<Item=LoquiFrame>,
         if let Some(frame) = self.buffer.take() {
             match self.try_start_send(frame) {
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Err(_err) => {
-                    warn!("Unexpected error, crashing FrameWriter");
+                Err(err) => {
+                    warn!("Unexpected error, crashing FrameWriter: {:?}", err);
                     return Err(());
                 }
                 _ => (),
@@ -74,8 +83,8 @@ where T: Stream<Item=LoquiFrame>,
                 // We got a frame from the Stream, try to send it.
                 Ok(Async::Ready(Some(frame))) => match self.try_start_send(frame) {
                     Ok(Async::NotReady) => return Ok(Async::NotReady),
-                    Err(_err) => {
-                        warn!("Unexpected error, crashing FrameWriter");
+                    Err(err) => {
+                        warn!("Unexpected error, crashing FrameWriter {:?}", err);
                         return Err(());
                     }
                     _ => (),
@@ -84,8 +93,8 @@ where T: Stream<Item=LoquiFrame>,
                 Ok(Async::Ready(None)) => match self.sink.close() {
                     Ok(Async::NotReady) => return Ok(Async::NotReady),
                     Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
-                    Err(_err) => {
-                        warn!("Unexpected error, crashing FrameWriter");
+                    Err(err) => {
+                        warn!("Unexpected error, crashing FrameWriter {:?}", err);
                         return Err(());
                     }
                 },
@@ -93,13 +102,13 @@ where T: Stream<Item=LoquiFrame>,
                 Ok(Async::NotReady) => match self.sink.poll_complete() {
                     Ok(Async::NotReady) => return Ok(Async::NotReady),
                     Ok(Async::Ready(_)) => return Ok(Async::NotReady),
-                    Err(_err) => {
-                        warn!("Unexpected error, crashing FrameWriter");
+                    Err(err) => {
+                        warn!("Unexpected error, crashing FrameWriter {:?}", err);
                         return Err(());
                     }
                 },
-                Err(_err) => {
-                    warn!("Unexpected error, crashing FrameWriter");
+                Err(err) => {
+                    warn!("Crashing client FrameWriter; Failed to poll: {:?}", err);
                     return Err(());
                 }
             }

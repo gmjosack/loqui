@@ -1,3 +1,4 @@
+use failure::Fail;
 
 #[derive(Debug, PartialEq, Fail)]
 pub enum ProtocolError {

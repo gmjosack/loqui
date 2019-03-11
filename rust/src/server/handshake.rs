@@ -1,8 +1,10 @@
 use std::sync::Arc;
+use std::net::SocketAddr;
 
 use tokio::prelude::*;
 use tokio::net::TcpStream;
 use tokio_codec::Framed;
+use log::{warn, debug};
 
 // Internal modules
 use crate::protocol::frames;
@@ -13,13 +15,16 @@ use crate::server::config::Config;
 pub struct HandShake {
     socket: Option<Framed<TcpStream, LoquiCodec>>,
     config: Arc<Config>,
+    peer_addr: SocketAddr,
 }
 
 impl HandShake {
     pub fn new(socket: Framed<TcpStream, LoquiCodec>, config: Arc<Config>) -> HandShake {
+        let peer_addr = socket.get_ref().peer_addr().expect("Only established connections should be passed.");
         HandShake {
             socket: Some(socket),
             config: config,
+            peer_addr: peer_addr,
         }
     }
 }
@@ -50,14 +55,14 @@ impl Future for HandShake {
             None => {
                 warn!(
                     "client went away without handshake: {:?}",
-                    socket.get_ref().peer_addr(),
+                    self.peer_addr,
                 );
                 return Err(());
             },
             Some(LoquiFrame::Hello(hello)) => {
                 debug!(
                     "handshake from client ({:?}) started: {:?}",
-                    socket.get_ref().peer_addr(),
+                    self.peer_addr,
                     hello,
                 );
                 let ack = frames::HelloAck::from_hello(
@@ -69,7 +74,7 @@ impl Future for HandShake {
 
                 return match ack {
                     None => {
-                        warn!("client failed handshake: {:?}", socket.get_ref().peer_addr());
+                        warn!("client failed handshake: {:?}", self.peer_addr);
                         Err(())
                     },
                     Some(ack) => Ok(Async::Ready((ack, socket))),
@@ -80,7 +85,7 @@ impl Future for HandShake {
             _ => {
                 warn!(
                     "client ({:?}) sent unexpected frame before handshake: {:?}",
-                    socket.get_ref().peer_addr(),
+                    self.peer_addr,
                     frame,
                 );
                 return Err(());

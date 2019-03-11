@@ -6,6 +6,7 @@ use tokio;
 use tokio::prelude::*;
 use tokio::net::TcpListener;
 use tokio_codec::Framed;
+use log::{info, warn};
 
 // Internal modules
 use crate::protocol::codec::LoquiCodec;

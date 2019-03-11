@@ -1,5 +1,6 @@
 extern crate loqui;
-extern crate env_logger;
+
+use futures::{future, Future};
 
 use loqui::server::{Server, Handler, Config};
 use loqui::protocol::{Request, Response, Push};
@@ -10,12 +11,10 @@ struct EchoServer {}
 
 
 impl Handler for EchoServer {
-    fn handle_request(&self, req: Request) -> Response {
-        Response{
-           flags: 0,
-           sequence_id: 0,
-           payload: b"hello, world!".to_vec(),
-        }
+    fn handle_request(&self, req: Request) -> Box<dyn Future<Item=Vec<u8>, Error=()>> {
+
+        println!("Saw {:?}", req.payload);
+        Box::new(future::ok(b"hello, world!".to_vec()))
     }
 
     fn handle_push(&self, push: Push) {}

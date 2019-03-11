@@ -6,6 +6,7 @@ repository = "https://github.com/discordapp/loqui"
 documentation = "https://docs.rs/loqui"
 license = "MIT"
 description = "Rust Client/Server Implementation of Loqui"
+edition = "2018"
 
 [lib]
 name = "loqui"
@@ -22,12 +23,10 @@ tokio = "0.1"
 tokio-codec = "0.1"
 tokio-timer = "0.2"
 
-
 [dev-dependencies]
 criterion = "0.2"
 env_logger = "0.5"
 
-[[bench]]
-name = "codec"
-path = "rust/benches/codec.rs"
-harness = false
+[[example]]
+name = "echo"
+path = "rust/examples/echo.rs"
